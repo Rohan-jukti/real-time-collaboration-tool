@@ -1,48 +1,37 @@
 const express = require("express");
 const http = require("http");
-const cors = require("cors");
 const { Server } = require("socket.io");
+const cors = require("cors");
 
 const app = express();
 app.use(cors());
 
 const server = http.createServer(app);
 
+// 🔥 IMPORTANT CORS FIX
 const io = new Server(server, {
   cors: {
     origin: "*",
-  },
+    methods: ["GET", "POST"]
+  }
 });
 
-let documents = {};
-let users = {};
-
+// socket logic
 io.on("connection", (socket) => {
   console.log("User connected:", socket.id);
 
-  socket.on("join-document", ({ docId, name }) => {
-    socket.join(docId);
+  socket.on("text-change", (data) => {
+    socket.broadcast.emit("text-update", data);
+  });
 
-    if (!documents[docId]) documents[docId] = "";
-    if (!users[docId]) users[docId] = 0;
-
-    users[docId]++;
-
-    socket.emit("load-document", documents[docId]);
-    io.to(docId).emit("user-count", users[docId]);
-
-    socket.on("send-changes", (data) => {
-      documents[docId] = data;
-      socket.to(docId).emit("receive-changes", data);
-    });
-
-    socket.on("disconnect", () => {
-      users[docId]--;
-      io.to(docId).emit("user-count", users[docId]);
-    });
+  socket.on("disconnect", () => {
+    console.log("User disconnected:", socket.id);
   });
 });
 
-server.listen(5000, () => {
-  console.log("Server running on port 5000");
+// ✅ PORT FIX (Render ke liye important)
+const PORT = process.env.PORT || 5000;
+
+server.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
