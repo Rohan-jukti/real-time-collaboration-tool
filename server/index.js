@@ -11,38 +11,36 @@ const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
     origin: "*",
+    methods: ["GET", "POST"]
   },
 });
 
 let documents = {};
-let users = {};
 
 io.on("connection", (socket) => {
   console.log("User connected:", socket.id);
 
-  socket.on("join-document", ({ docId, name }) => {
+  socket.on("join-document", (docId) => {
     socket.join(docId);
 
     if (!documents[docId]) documents[docId] = "";
-    if (!users[docId]) users[docId] = 0;
-
-    users[docId]++;
 
     socket.emit("load-document", documents[docId]);
-    io.to(docId).emit("user-count", users[docId]);
 
     socket.on("send-changes", (data) => {
       documents[docId] = data;
       socket.to(docId).emit("receive-changes", data);
     });
+  });
 
-    socket.on("disconnect", () => {
-      users[docId]--;
-      io.to(docId).emit("user-count", users[docId]);
-    });
+  socket.on("disconnect", () => {
+    console.log("User disconnected:", socket.id);
   });
 });
 
-server.listen(5000, () => {
-  console.log("Server running on port 5000");
+// ✅ FIXED PORT
+const PORT = process.env.PORT || 5000;
+
+server.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });

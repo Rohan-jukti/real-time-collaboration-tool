@@ -1,17 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { io } from "socket.io-client";
 
-const socket = io("http://localhost:5000");
+const socket = io("https://real-time-collaboration-tool-yc9s.onrender.com");
 
 function App() {
   const [text, setText] = useState("");
 
   useEffect(() => {
     socket.emit("join-document", "room1");
-
-    socket.on("load-document", (data) => {
-      setText(data);
-    });
 
     socket.on("receive-changes", (data) => {
       setText(data);
